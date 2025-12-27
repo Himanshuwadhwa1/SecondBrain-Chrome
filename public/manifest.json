@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Right Side Chat Extension",
+  "version": "1.0",
+  "description": "Opens a chat panel on the right side of Chrome",
+  "action": {
+    "default_title": "Open Chat"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["sidePanel"]
+}
