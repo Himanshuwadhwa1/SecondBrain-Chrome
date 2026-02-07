@@ -32,6 +32,10 @@ const Login = () => {
         // Extract the id_token from the URL hash
         const url = new URL(responseUrl.replace('#', '?'));
         const idToken = url.searchParams.get('id_token');
+        if (!idToken){
+          alert("Some error occured, Please try again later");
+        }
+        
         
         });
     };
