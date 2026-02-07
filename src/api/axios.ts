@@ -10,7 +10,7 @@ let accesstoken:string|null = null;
 
 export const tokenStore = {
     get: ()=>accesstoken,
-    set: (token:string)=>{
+    set: (token:string|null)=>{
         accesstoken = token
     }
 }
@@ -22,14 +22,3 @@ apiServer.interceptors.request.use((config)=>{
     }
     return config;
 })
-
-apiServer.interceptors.response.use(
-  res => res,
-  async error => {
-    if (error.response?.status === 401) {
-      // call refresh
-      // retry original request
-    }
-    return Promise.reject(error);
-  }
-);

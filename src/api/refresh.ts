@@ -1,3 +1,4 @@
+import { useUser } from "../hooks/useUser";
 import { logout, refreshToken } from "./apiServer";
 import { apiServer, tokenStore } from "./axios";
 
@@ -45,7 +46,8 @@ apiServer.interceptors.response.use(
         }catch(err){
             queueProcesser(err,null);
             if (originalRequest.url.includes("/auth/refresh")){
-                // await logout();
+                const {logout} = useUser();
+                logout();
                 return Promise.reject(err);
             }
             return Promise.reject(err);
