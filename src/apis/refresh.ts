@@ -1,5 +1,5 @@
-import { useUser } from "../hooks/useUser";
-import { logout, refreshToken } from "./apiServer";
+import { logout } from "../services/authService";
+import {  refreshToken } from "./apiServer";
 import { apiServer, tokenStore } from "./axios";
 
 let isRefreshing = false;
@@ -21,6 +21,16 @@ apiServer.interceptors.response.use(
     (res) =>res,
     async (error)=>{
         const originalRequest = error.config;
+        if(!originalRequest) return Promise.reject(error);
+
+        if (originalRequest.url.includes("/auth/refresh")){
+            logout();
+            return Promise.reject(error);
+        }
+
+        if (error.response?.status != 401) return Promise.reject(error);
+        if(originalRequest._retry) return Promise.reject(error);
+
         if(error.response?.status == 401 && !originalRequest._retry){
             originalRequest._retry= true;
             if(isRefreshing){
@@ -34,25 +44,22 @@ apiServer.interceptors.response.use(
                     });
                 })
             }
-        }
-
-        isRefreshing = true;
-        try{
-            const newToken = await refreshToken();
-            tokenStore.set(newToken);
-            queueProcesser(null,newToken);
-            originalRequest.headers.Authorization = `Bearer ${newToken}`
-            return apiServer(originalRequest);
-        }catch(err){
-            queueProcesser(err,null);
-            if (originalRequest.url.includes("/auth/refresh")){
-                const {logout} = useUser();
-                logout();
-                return Promise.reject(err);
+            else{
+                isRefreshing = true;
+                try{
+                    const newToken = await refreshToken();
+                    tokenStore.set(newToken);
+                    queueProcesser(null,newToken);
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`
+                    return apiServer(originalRequest);
+                }catch(err){
+                    queueProcesser(err,null);
+                    return Promise.reject(err);
+                }finally{
+                    isRefreshing = false;
+                }
             }
-            return Promise.reject(err);
-        }finally{
-            isRefreshing = false;
         }
+        return Promise.reject(error);
     }
 )

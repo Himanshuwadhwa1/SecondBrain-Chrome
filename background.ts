@@ -5,6 +5,6 @@ chrome.action.onClicked.addListener((tab) => {
     enabled: true
   });
 
-  chrome.sidePanel.open({ tabId: tab.id })
+  chrome.sidePanel.open({ tabId: tab.id ,windowId:tab.windowId})
     .catch((error) => console.error(error));
 });
