@@ -1,11 +1,13 @@
-import { useState } from "react";
 import Button from "../components/Button"
 import { GOOGLE_CLIENT_ID } from "../utils/env";
+import { googleLogin } from "../apis/apiServer";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../hooks/useUser";
 
-type Status = "idle" | "loading" | "authorized" | "unauthorized" | "error"
 
 const Login = () => {
-  const [status, setStatus] = useState<Status>("idle");
+  const {status,setStatus,setUser,setAccessToken} = useUser();
+  const navigate = useNavigate();
 
   const handleLogin = () => {
     setStatus("loading");
@@ -18,14 +20,15 @@ const Login = () => {
     authUrl.searchParams.set('response_type', 'id_token');
     authUrl.searchParams.set('redirect_uri', REDIRECT_URL);
     authUrl.searchParams.set('scope', 'openid email profile');
-    authUrl.searchParams.set('nonce', Math.random().toString(36).substring(2));
+    authUrl.searchParams.set('nonce', crypto.randomUUID());
 
     chrome.identity.launchWebAuthFlow({
         url: authUrl.href,
         interactive: true
-    }, (responseUrl) => {
+    }, async(responseUrl) => {
         if (chrome.runtime.lastError || !responseUrl) {
         console.error(chrome.runtime.lastError);
+        setStatus("error");
         return;
         }
 
@@ -34,8 +37,28 @@ const Login = () => {
         const idToken = url.searchParams.get('id_token');
         if (!idToken){
           alert("Some error occured, Please try again later");
+          setStatus("unauthorized");
+          return;
         }
-        
+        try{
+          const response = await googleLogin(idToken);
+          const data = await response.data;
+          const accessToken = data?.access_token;
+          console.log("accessToken from login:",accessToken);
+          const userInfo = data?.user;
+          if (accessToken && userInfo){
+            setStatus("authorized");
+            setAccessToken(accessToken);
+            setUser(userInfo);
+            await chrome.storage.local.set({"accessToken":accessToken});
+            navigate("/protected");
+          }else{
+            setStatus("unauthorized");
+          }
+        }catch(err){
+          setStatus("error")
+          alert("error");
+        }
         
         });
     };

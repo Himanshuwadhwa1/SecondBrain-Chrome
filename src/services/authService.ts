@@ -9,11 +9,11 @@ export const registerAuthHandlers = (qc: QueryClient,resetFunction:()=>void)=>{
     resetAuthState = resetFunction;
 }
 
-export const logout = ()=>{
+export const logout = async()=>{
     if(resetAuthState) resetAuthState();
     if(queryClient){
         queryClient.cancelQueries();
         queryClient.clear();
     }
-    tokenStore.set(null);
+    await tokenStore.clear();
 }

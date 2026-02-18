@@ -1,25 +1,46 @@
-import { useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useUser } from "../hooks/useUser";
+import Button from "../components/Button";
+import { tokenStore } from "../apis/axios";
 
-const Home = ()=>{
-    const {accessToken, setAccessToken} = useUser()
+const Home = () => {
+    const { accessToken, setAccessToken } = useUser();
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const navigate = useNavigate();
 
-    useEffect(()=>{
-        const storedToken = localStorage.getItem("access_token");
-        if (storedToken){
-            setAccessToken(storedToken);
-        }
-    },[])
+    useEffect(() => {
+        const fetchToken = async () => {
+            try {
+                if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+                    const token = await tokenStore.get()
+                    if (token && typeof token =="string") {
+                        setAccessToken(token);
+                        await tokenStore.set(token);
+                    }
+                }
+            } catch (error) {
+                console.error("Error accessing chrome storage:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchToken();
+    }, [accessToken]);
+
+    if (isLoading) return <div>Loading......................</div>;
 
     return (
-    <div className="flex justify-center items-center h-screen">
-        {accessToken ? 
-        <h1>User logged in</h1>:
-        <Navigate to={"/login"} />
-        }
-    </div>
-    )
-}
+        <div className="flex justify-center items-center h-screen">
+            {accessToken ? (
+                <Button onClick={() => navigate("/protected")}>Chat</Button>
+            ) : (
+                <Navigate to="/login" replace />
+            )
+            }
+        </div>
+    );
+};
 
 export default Home;
